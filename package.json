@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "src/app.ts",
   "scripts": {
-    "dev": "tsnd --respawn src/app.ts",
+    "dev": "nodemon src/app.ts",
     "build": "tsup ",
     "start": "node dist/index.js",
     "lint": "eslint . --ext .ts",
@@ -16,14 +16,18 @@
   "description": "",
   "devDependencies": {
     "@eslint/js": "^9.25.1",
+    "@faker-js/faker": "^9.7.0",
     "@types/express": "^4.17.1",
     "eslint": "^9.25.1",
+    "faker": "^6.6.6",
     "globals": "^16.0.0",
-    "ts-node-dev": "^2.0.0",
+    "nodemon": "^3.1.10",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.31.0"
   },
   "dependencies": {
-    "express": "^4.17.1"
+    "dotenv": "^16.5.0",
+    "express": "^4.17.1",
+    "mongoose": "^8.13.2"
   }
 }
