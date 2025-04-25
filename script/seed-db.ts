@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { faker } from "@faker-js/faker";
-import { Profile } from "../db/schemas/profile";
+import { Profile } from "../src/schemas/profile";
 
 const MONGO_URI = process.env.DATABASE_URL; // Change to your DB
 
