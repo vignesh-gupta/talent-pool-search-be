@@ -2,18 +2,31 @@ import mongoose from "mongoose";
 import { faker } from "@faker-js/faker";
 import { Profile } from "../src/schemas/profile";
 
-const MONGO_URI = process.env.DATABASE_URL; // Change to your DB
+
 
 const NUM_PROFILES = 10000;
 
 async function connectDB() {
-  await mongoose.connect(MONGO_URI, {});
+  await mongoose.connect("mongodb+srv://dbuser:6Ibi5jpvbM7yEuBQ@cluster0.ewh6dwx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0");
   console.log("Connected to MongoDB");
 }
 
+const techSkills = [
+  "JavaScript", "TypeScript", "Python", "Java", "C#", "C++", "Go", "Rust", "Ruby", "Kotlin",
+  "React.js", "Next.js", "Angular", "Vue.js", "Svelte", "SolidJS", "React Native", "Flutter", "Ionic", "Expo",
+  "Node.js", "Express.js", "Spring Boot", ".NET Core", "Django", "Flask", "FastAPI", "Ruby on Rails", "Laravel", "NestJS",
+  "HTML5", "CSS3", "Sass", "Less", "Tailwind CSS", "Bootstrap", "Material UI", "Chakra UI", "Styled Components", "Emotion",
+  "MySQL", "PostgreSQL", "MongoDB", "SQLite", "Redis", "Cassandra", "DynamoDB", "Firebase Realtime DB", "Firestore", "Neo4j",
+  "AWS", "Azure", "Google Cloud Platform", "Heroku", "Vercel", "Netlify", "Docker", "Kubernetes", "Terraform", "Ansible",
+  "Git", "GitHub", "GitLab", "Bitbucket", "CI/CD", "Jenkins", "CircleCI", "Travis CI", "GitHub Actions", "Azure DevOps",
+  "Webpack", "Vite", "Rollup", "Parcel", "Babel", "ESLint", "Prettier", "Storybook", "Jest", "Mocha",
+  "Cypress", "Selenium", "Playwright", "Puppeteer", "Postman", "Insomnia", "Swagger", "OpenAPI", "GraphQL", "RESTful APIs",
+  "Kafka", "RabbitMQ", "gRPC", "WebSockets", "OAuth2", "JWT", "Stripe API", "Twilio API", "Algolia", "ElasticSearch"
+];
+
 function generateSkills() {
   return Array.from({ length: faker.number.int({ min: 3, max: 7 }) }, () => ({
-    name: faker.hacker.noun(),
+    name: techSkills[faker.number.int({ min: 0, max: techSkills.length - 1 })],
     experience: faker.number.int({ min: 1, max: 10 }),
   }));
 }

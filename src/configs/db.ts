@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { config } from "./config";
 import logger from "../utils/logger";
-let connection = null;
+let connection: mongoose.Mongoose | null = null;
 
 export const connectDB = async () => {
   try {
