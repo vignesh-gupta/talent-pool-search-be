@@ -1,24 +1,20 @@
 import express from "express";
-import { getConnection } from "../configs/db";
-import { Profile, profileSchema } from "../schemas/profile";
+import { Profile } from "../schemas/profile";
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  res.status(200).json({
-    status: "ok",
-    message: "API is running",
-  });
-});
-
 router.get("/search", async (req, res) => {
-  const { skills, skillsMinExp, workExp, location, company } = req.query;
+  const { skills = "", skillsMinExp= "", availableBy, location, company } = req.query;
 
   const query: any = {};
 
   if (skills) {
-    const skillsArray = Array.isArray(skills) ? skills : skills.toString().split(",");
-    const minExpArray = Array.isArray(skillsMinExp) ? skillsMinExp : skillsMinExp?.toString().split(",") || [];
+    const skillsArray = Array.isArray(skills)
+      ? skills
+      : skills.toString().split(",");
+    const minExpArray = Array.isArray(skillsMinExp)
+      ? skillsMinExp
+      : skillsMinExp?.toString().split(",") || [];
 
     query.skills = {
       $all: skillsArray.map((skill, index) => ({
@@ -30,7 +26,24 @@ router.get("/search", async (req, res) => {
     };
   }
 
-  console.log({ query: JSON.stringify(query) });
+  // Process company filter - search across the experience array
+  if (company) {
+    query.experience = {
+      $elemMatch: {
+        company: { $regex: company, $options: "i" },
+      },
+    };
+  }
+
+  if (availableBy) {
+    const availableByDate = new Date(availableBy.toString());
+
+    // { "availability.from": { $lte: ISODate("2025-06-01") }, "availability.to": { $gte: ISODate("2025-06-01") } }
+    query["availability.from"] = { $lte: availableByDate }; 
+    query["availability.to"] = { $gte: availableByDate };   
+  }
+
+  console.log(JSON.stringify(query));
 
   const profiles = await Profile.find(query).limit(50)
 
