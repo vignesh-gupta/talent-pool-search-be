@@ -7,7 +7,7 @@ import { Profile } from "../src/schemas/profile";
 const NUM_PROFILES = 10000;
 
 async function connectDB() {
-  await mongoose.connect("mongodb+srv://dbuser:6Ibi5jpvbM7yEuBQ@cluster0.ewh6dwx.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0");
+  await mongoose.connect("DB_URL");
   console.log("Connected to MongoDB");
 }
 
