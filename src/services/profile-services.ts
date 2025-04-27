@@ -1,5 +1,13 @@
 import { Profile } from "../schemas/profile";
 
+export type ProfileQuery = {
+  skills?: any;
+  company?: any;
+  experience?: any;
+  availableBy?: any;
+  location?: any;
+};
+
 export const formulateQuery = ({
   skills,
   skillsMinExp,
@@ -13,8 +21,7 @@ export const formulateQuery = ({
   availableBy?: string;
   location?: string;
 }) => {
-
-  const query: any = {};
+  const query: ProfileQuery = {};
 
   if (skills) {
     const skillsArray = Array.isArray(skills)
@@ -43,21 +50,29 @@ export const formulateQuery = ({
     };
   }
 
-  if (availableBy) {
+  if (!!availableBy) {
     const availableByDate = new Date(availableBy.toString());
 
     // { "availability.from": { $lte: ISODate("2025-06-01") }, "availability.to": { $gte: ISODate("2025-06-01") } }
-    query["availability.from"] = { $lte: availableByDate }; 
-    query["availability.to"] = { $gte: availableByDate };   
+    query["availability.from"] = { $lte: availableByDate };
+    query["availability.to"] = { $gte: availableByDate };
   }
+
+  console.log("Query:", query);
 
   return query;
 };
 
-export const getProfiles = async (query: any, page: number, limit : number) => {
+export const getProfiles = async (
+  query: ProfileQuery,
+  page: number = 1,
+  limit: number = 50
+) => {
   try {
-    
-    const profiles = await Profile.find(query).limit(limit).skip((page - 1) * limit).exec();
+    const profiles = await Profile.find(query)
+      .limit(limit)
+      .skip((page - 1) * limit)
+      .exec();
     return profiles;
   } catch (error) {
     throw new Error("Error fetching profiles");

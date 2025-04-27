@@ -1,39 +1,49 @@
 import express from "express";
 import { Profile } from "../schemas/profile";
 import { formulateQuery, getProfiles } from "../services/profile-services";
+import { z } from "zod";
+import { validateDate } from "../utils/validation";
+import { validateData } from "../middlewares/validationMiddleware";
+import { profileSearchSchema } from "../utils/zod";
 
 const router = express.Router();
 
-router.get("/search", async (req, res) => {
+router.get("/search", validateData(profileSearchSchema), async (req, res) => {
   try {
     const {
-      skills = "",
-      skillsMinExp = "",
+      skills,
+      skillsMinExp,
       availableBy,
       location,
       company,
       page,
       limit,
-    } = req.query;
+    } = profileSearchSchema.parse(req.query);
+
+    if (availableBy && !validateDate(availableBy)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid date format for availableBy",
+      });
+    }
 
     const query = formulateQuery({
-      skills: decodeURIComponent(skills?.toString()),
-      skillsMinExp: decodeURIComponent(skillsMinExp?.toString()),
-      availableBy: decodeURIComponent(availableBy?.toString()),
-      location: decodeURIComponent(location?.toString()),
-      company: decodeURIComponent(company?.toString()),
+      skills: skills ? decodeURIComponent(skills) : undefined,
+      skillsMinExp: skillsMinExp ? decodeURIComponent(skillsMinExp) : undefined,
+      availableBy: availableBy ? decodeURIComponent(availableBy) : undefined,
+      location: location ? decodeURIComponent(location) : undefined,
+      company: company ? decodeURIComponent(company) : undefined,
     });
 
     console.log(JSON.stringify(query));
 
-    const pageNumber = parseInt(page.toString(), 10) || 1;
-    const limitNumber = parseInt(limit.toString(), 10) || 50;
-
-    const profiles = await getProfiles(query, pageNumber, limitNumber);
+    const profiles = await getProfiles(query, page, limit);
 
     return res.status(200).json({
       success: true,
       message: "Profiles fetched successfully",
+      total: profiles.length,
+      page: page || 1,
       data: profiles,
     });
   } catch (error) {
@@ -69,7 +79,6 @@ router.get("/:id", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Internal server error",
-      error: error.message,
     });
   }
 });
