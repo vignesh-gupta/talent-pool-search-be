@@ -1,68 +1,76 @@
 import express from "express";
 import { Profile } from "../schemas/profile";
+import { formulateQuery, getProfiles } from "../services/profile-services";
 
 const router = express.Router();
 
 router.get("/search", async (req, res) => {
-  const { skills = "", skillsMinExp= "", availableBy, location, company } = req.query;
+  try {
+    const {
+      skills = "",
+      skillsMinExp = "",
+      availableBy,
+      location,
+      company,
+      page,
+      limit,
+    } = req.query;
 
-  const query: any = {};
+    const query = formulateQuery({
+      skills: decodeURIComponent(skills?.toString()),
+      skillsMinExp: decodeURIComponent(skillsMinExp?.toString()),
+      availableBy: decodeURIComponent(availableBy?.toString()),
+      location: decodeURIComponent(location?.toString()),
+      company: decodeURIComponent(company?.toString()),
+    });
 
-  if (skills) {
-    const skillsArray = Array.isArray(skills)
-      ? skills
-      : skills.toString().split(",");
-    const minExpArray = Array.isArray(skillsMinExp)
-      ? skillsMinExp
-      : skillsMinExp?.toString().split(",") || [];
+    console.log(JSON.stringify(query));
 
-    query.skills = {
-      $all: skillsArray.map((skill, index) => ({
-        $elemMatch: {
-          name: { $regex: skill, $options: "i" }, // Case-insensitive fuzzy search
-          experience: { $gte: minExpArray[index] || 0 }, // Use corresponding minExp or default to 0
-        },
-      })),
-    };
+    const pageNumber = parseInt(page.toString(), 10) || 1;
+    const limitNumber = parseInt(limit.toString(), 10) || 50;
+
+    const profiles = await getProfiles(query, pageNumber, limitNumber);
+
+    return res.status(200).json({
+      success: true,
+      message: "Profiles fetched successfully",
+      data: profiles,
+    });
+  } catch (error) {
+    console.error("Error fetching profiles:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
   }
-
-  // Process company filter - search across the experience array
-  if (company) {
-    query.experience = {
-      $elemMatch: {
-        company: { $regex: company, $options: "i" },
-      },
-    };
-  }
-
-  if (availableBy) {
-    const availableByDate = new Date(availableBy.toString());
-
-    // { "availability.from": { $lte: ISODate("2025-06-01") }, "availability.to": { $gte: ISODate("2025-06-01") } }
-    query["availability.from"] = { $lte: availableByDate }; 
-    query["availability.to"] = { $gte: availableByDate };   
-  }
-
-  console.log(JSON.stringify(query));
-
-  const profiles = await Profile.find(query).limit(50)
-
-  return res.status(200).json({
-    success: true,
-    message: "Profiles fetched successfully",
-    data: profiles,
-  });
 });
 
 router.get("/:id", async (req, res) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  const profile = await Profile.findById(id);
+    const profile = await Profile.findById(id);
 
-  return res.status(200).json({
-    success: true,
-    message: "Profile fetched successfully",
-    data: profile,
-  });
+    if (!profile) {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile fetched successfully",
+      data: profile,
+    });
+  } catch (error) {
+    console.error("Error fetching profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
 });
 export default router;
