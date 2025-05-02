@@ -28,23 +28,33 @@ router.get("/search", validateData(profileSearchSchema), async (req, res) => {
     }
 
     const query = formulateQuery({
-      skills: skills ? decodeURIComponent(skills) : undefined,
-      skillsMinExp: skillsMinExp ? decodeURIComponent(skillsMinExp) : undefined,
-      availableBy: availableBy ? decodeURIComponent(availableBy) : undefined,
-      location: location ? decodeURIComponent(location) : undefined,
-      company: company ? decodeURIComponent(company) : undefined,
+      skills,
+      skillsMinExp,
+      availableBy,
+      location,
+      company,
     });
 
-    console.log(JSON.stringify(query));
 
-    const profiles = await getProfiles(query, page, limit);
+    query.forEach((q) => {
+      console.log(JSON.stringify(q.$addFields));
+      
+    })
+
+
+    const { data, hasNext, hasPrev, total } = await getProfiles(
+      query,
+      page,
+      limit
+    );
 
     return res.status(200).json({
       success: true,
-      message: "Profiles fetched successfully",
-      total: profiles.length,
+      total,
       page: page || 1,
-      data: profiles,
+      hasNext,
+      hasPrev,
+      data,
     });
   } catch (error) {
     console.error("Error fetching profiles:", error);
