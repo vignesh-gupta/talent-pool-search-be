@@ -26,11 +26,11 @@ export const formulateQuery = ({
   availableBy?: string;
   location?: string;
 }) => {
-  const pipeline: PipelineStage[] = [
-    // Add a field to check the match percentage for skills and min experience
-    // Check skill_match (if skills are there + min experience) = 1 pt , if skills are there but no min experience = 0.5 pt or 0 pt
+  const pipeline: PipelineStage[] = [];
+  // Add a field to check the match percentage for skills and min experience
+  // Check skill_match (if skills are there + min experience) = 1 pt , if skills are there but no min experience = 0.5 pt or 0 pt
 
-    /*
+  /*
     eg: 
     case 1:
     input: [{ name: "Java", minExperience: 2 }, { name: "Python", minExperience: 3 }]
@@ -42,76 +42,75 @@ export const formulateQuery = ({
     Database: [{ name: "Java", experience: 2 }, { name: "Python", experience: 3 }]
     output: skillsMatch = (1+1)  = 2/ 2 = 1
     */
-    {
-      $addFields: {
-        skillsMatch: {
-          $divide: [
-            {
-              $sum: {
-                $map: {
-                  input: skills, // pass as aggregation variable
-                  as: "desiredSkill",
-                  in: {
-                    $let: {
-                      vars: {
-                        matchedSkill: {
-                          $first: {
-                            $filter: {
-                              input: "$skills",
-                              as: "userSkill",
-                              cond: {
-                                $eq: [
-                                  "$$userSkill.name",
-                                  "$$desiredSkill.name",
-                                ],
-                              },
+  pipeline.push({
+    $addFields: {
+      skillsMatch: {
+        $divide: [
+          {
+            $sum: {
+              $map: {
+                input: skills, // pass as aggregation variable
+                as: "desiredSkill",
+                in: {
+                  $let: {
+                    vars: {
+                      matchedSkill: {
+                        $first: {
+                          $filter: {
+                            input: "$skills",
+                            as: "userSkill",
+                            cond: {
+                              $eq: ["$$userSkill.name", "$$desiredSkill.name"],
                             },
                           },
                         },
                       },
-                      in: {
-                        $cond: {
-                          if: { $gt: ["$$matchedSkill", null] }, // skill exists in user
-                          then: {
-                            $cond: [
-                              {
-                                $gte: [
-                                  "$$matchedSkill.experience",
-                                  "$$desiredSkill.minExperience",
-                                ],
-                              },
-                              1,
-                              0.5,
-                            ],
-                          },
-                          else: 0,
+                    },
+                    in: {
+                      $cond: {
+                        if: { $gt: ["$$matchedSkill", null] }, // skill exists in user
+                        then: {
+                          $cond: [
+                            {
+                              $gte: [
+                                "$$matchedSkill.experience",
+                                "$$desiredSkill.minExperience",
+                              ],
+                            },
+                            1,
+                            0.5,
+                          ],
                         },
+                        else: 0,
                       },
                     },
                   },
                 },
               },
             },
-            skills.length,
-          ],
-        },
+          },
+          skills.length,
+        ],
       },
     },
-    {
-      $addFields: {
-        totalExperience: {
-          $sum: {
-            $map: {
-              input: "$experience",
-              as: "useExp",
-              in: "$$useExp.years",
-            },
+  });
+
+  pipeline.push({
+    $addFields: {
+      totalExperience: {
+        $sum: {
+          $map: {
+            input: "$experience",
+            as: "useExp",
+            in: "$$useExp.years",
           },
         },
       },
     },
+  });
 
-    // Add a field to check the recency of the profile (in range 1-0 : 1 for recent,  0 for 90+ days old)
+  // Add a field to check the recency of the profile (in range 1-0 : 1 for recent,  0 for 90+ days old)
+  pipeline.push(
     {
       $addFields: {
         daysSinceActive: {
@@ -138,44 +137,32 @@ export const formulateQuery = ({
           ],
         },
       },
-    },
-    {
-      $addFields:{
-        cals: {
-          skillsMatPt: {$multiply: ["$skillsMatch", 0.5]},
-          expPt: {$multiply: ["$totalExperience", 0.3 / 10]}, // 0.3 is the weight for experience, 10 is to convert year to 0-1 scale
-          recencyPt: {$multiply: ["$recencyScore", 0.2]}
-        }
-      }
-    },
-    {
-      $addFields: {
-        finalScore: {
-          $round: [
-            {
-              $divide: [
-                {
-                  $add: [
-                    {
-                      $multiply: ["$skillsMatch", 0.5],
-                    },
-                    {
-                      $multiply: ["$totalExperience", 0.3 / 10], // 0.3 is the weight for experience, 10 is to convert year to 0-1 scale
-                    },
-                    {
-                      $multiply: ["$recencyScore", 0.2],
-                    },
-                  ],
-                },
-                3,
-              ],
-            },
-            2,
-          ],
-        },
+    }
+  );
+
+  // Final score calculation = (0.5 * skillsMatch + 0.3 * totalExperience/10 + 0.2 * recencyScore)
+  pipeline.push({
+    $addFields: {
+      finalScore: {
+        $round: [
+          {
+            $add: [
+              {
+                $multiply: ["$skillsMatch", 0.5],
+              },
+              {
+                $multiply: ["$totalExperience", 0.3 / 10], // 0.3 is the weight for experience, 10 is to convert year to 0-1 scale
+              },
+              {
+                $multiply: ["$recencyScore", 0.2],
+              },
+            ],
+          },
+          2,
+        ],
       },
     },
-  ];
+  });
 
   pipeline.push({
     $sort: { finalScore: -1 },
