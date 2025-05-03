@@ -10,7 +10,9 @@ export const connectDB = async () => {
       return connection;
     }
 
-    connection = await mongoose.connect(config.mongoUri);
+    connection = await mongoose.connect(config.mongoUri , {
+      dbName: "talent-pool",
+    });
     logger.info("MongoDB connected successfully");
     return connection;
   } catch (error) {
