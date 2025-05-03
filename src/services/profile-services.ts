@@ -1,4 +1,6 @@
-import { Profile } from "../schemas/profile";
+import { PipelineStage } from "mongoose";
+import { ProfileModel } from "../schemas/profile";
+import logger from "../utils/logger";
 
 export type ProfileQuery = {
   skills?: any;
@@ -8,139 +10,155 @@ export type ProfileQuery = {
   location?: any;
 };
 
+export type ISkill = {
+  name: string;
+  minExperience: number;
+};
+
 export const formulateQuery = ({
   skills,
-  skillsMinExp,
   company,
   availableBy,
   location,
 }: {
-  skills?: string;
-  skillsMinExp?: string;
+  skills?: ISkill[];
   company?: string;
   availableBy?: string;
   location?: string;
 }) => {
-  const desiredSkills = skills ? skills.split(",") : [];
+  const pipeline: PipelineStage[] = [
+    // Add a field to check the match percentage for skills and min experience
+    // Check skill_match (if skills are there + min experience) = 1 pt , if skills are there but no min experience = 0.5 pt or 0 pt
 
-  const pipeline = [
-    // 1. Handle optional skills field
+    /*
+    eg: 
+    case 1:
+    input: [{ name: "Java", minExperience: 2 }, { name: "Python", minExperience: 3 }]
+    Database: [{ name: "Java", experience: 2 }, { name: "Python", experience: 1 }]
+    output: skillsMatch = (1+0.5)  = 1.5/ 2 = 0.75
+
+    case 2:
+    input: [{ name: "Java", minExperience: 2 }, { name: "Python", minExperience: 3 }]
+    Database: [{ name: "Java", experience: 2 }, { name: "Python", experience: 3 }]
+    output: skillsMatch = (1+1)  = 2/ 2 = 1
+    */
     {
-      '$addFields': {
-        'years_of_experience': {
-          '$sum': '$experience.years'
-        }, 
-      }
-    }
-    // 2. Calculate skill match percent (safe fallback)
-    // {
-    //   $addFields: {
-    //     skillMatchPercent: {
-    //       $cond: [
-    //         { $gt: [desiredSkills.length, 0] },
-    //         {
-    //           $divide: [{ $size: "$matchedSkills" }, desiredSkills.length],
-    //         },
-    //         0,
-    //       ],
-    //     },
-    //   },
-    // },
-    // // 3. Sum experience years (safe fallback)
-    // {
-    //   $addFields: {
-    //     totalYearsExp: {
-    //       $cond: [
-    //         { $isArray: "$experience" },
-    //         {
-    //           $sum: {
-    //             $map: {
-    //               input: "$experience",
-    //               as: "exp",
-    //               in: "$$exp.years",
-    //             },
-    //           },
-    //         },
-    //         0,
-    //       ],
-    //     },
-    //   },
-    // },
-    // 4. Recency score (safe fallback if no last_active)
-    // {
-    //   $addFields: {
-    //     daysSinceActive: {
-    //       $cond: [
-    //         { $ifNull: ["$last_active", false] },
-    //         {
-    //           $divide: [
-    //             { $subtract: [new Date(), "$last_active"] },
-    //             1000 * 60 * 60 * 24,
-    //           ],
-    //         },
-    //         null,
-    //       ],
-    //     },
-    //   },
-    // },
-    // {
-    //   $addFields: {
-    //     recencyScore: {
-    //       $cond: [
-    //         { $ifNull: ["$daysSinceActive", false] },
-    //         {
-    //           $cond: [
-    //             { $gt: ["$daysSinceActive", 90] },
-    //             0,
-    //             {
-    //               $subtract: [1, { $divide: ["$daysSinceActive", 90] }],
-    //             },
-    //           ],
-    //         },
-    //         0,
-    //       ],
-    //     },
-    //   },
-    // },
-    // 5. Final score with weighted average
-    // {
-    //   $addFields: {
-    //     finalScore: {
-    //       $add: [
-    //         { $multiply: ["$skillMatchPercent", 0.5] },
-    //         { $multiply: ["$totalYearsExp", 0.3] },
-    //         { $multiply: ["$recencyScore", 0.2] },
-    //       ],
-    //     },
-    //   },
-    // },
-    // 6. Sort
-    // { $sort: { finalScore: -1 } },
-    // 7. Output
-    // {
-    //   $project: {
-    //     name: 1,
-    //     email: 1,
-    //     skillMatchPercent: 1,
-    //     totalYearsExp: 1,
-    //     recencyScore: 1,
-    //     finalScore: 1,
-    //   },
-    // },
+      $addFields: {
+        skillsMatch: {
+          $divide: [
+            {
+              $sum: {
+                $map: {
+                  input: skills, // pass as aggregation variable
+                  as: "desiredSkill",
+                  in: {
+                    $let: {
+                      vars: {
+                        matchedSkill: {
+                          $first: {
+                            $filter: {
+                              input: "$skills",
+                              as: "userSkill",
+                              cond: {
+                                $eq: [
+                                  "$$userSkill.name",
+                                  "$$desiredSkill.name",
+                                ],
+                              },
+                            },
+                          },
+                        },
+                      },
+                      in: {
+                        $cond: {
+                          if: { $gt: ["$$matchedSkill", null] }, // skill exists in user
+                          then: {
+                            $cond: [
+                              {
+                                $gte: [
+                                  "$$matchedSkill.experience",
+                                  "$$desiredSkill.minExperience",
+                                ],
+                              },
+                              1,
+                              0.5,
+                            ],
+                          },
+                          else: 0,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            skills.length,
+          ],
+        },
+      },
+    },
+    {
+      $addFields: {
+        totalExperience: {
+          $sum: {
+            $map: {
+              input: "$experience",
+              as: "useExp",
+              in: "$$useExp.years",
+            },
+          },
+        },
+      },
+    },
+
+    // Add a field to check the recency of the profile (in range 1-0 : 1 for recent,  0 for 90+ days old)
+    {
+      $addFields: {
+        daysSinceActive: {
+          $dateDiff: {
+            startDate: "$last_active",
+            endDate: "$$NOW",
+            unit: "day",
+          },
+        },
+      },
+    },
+    {
+      $addFields: {
+        recencyScore: {
+          $round: [
+            {
+              $cond: [
+                { $lte: ["$daysSinceActive", 90] },
+                { $divide: [{ $subtract: [90, "$daysSinceActive"] }, 90] },
+                0,
+              ],
+            },
+            2,
+          ],
+        },
+      },
+    },
   ];
+
+  pipeline.push({
+    $sort: { skillsMatch: -1 },
+  });
+
   return pipeline;
 };
 
 export const getProfiles = async (
-  pipeline: any[],
-  page: number = 1,
-  limit: number = 50
+  pipeline: PipelineStage[],
+  page: number,
+  limit: number
 ) => {
   try {
+    const total = await ProfileModel.countDocuments();
 
-    const result = await Profile.aggregate(pipeline)
-    const profiles = result[0].data;
-    const total = result[0].total[0] ? result[0].total[0].count : 0;
+    const result = await ProfileModel.aggregate(pipeline)
+      .limit(limit)
+      .skip((page - 1) * limit);
 
     const hasNext = page * limit < total; // Check if there are more pages
     const hasPrev = page > 1; // Check if there is a previous page
@@ -149,9 +167,12 @@ export const getProfiles = async (
       total, // Total number of matching documents
       hasNext,
       hasPrev,
-      data: profiles, // Paginated data
+      dataLength: result.length, // Length of the paginated data
+      data: result, // Paginated data
     };
   } catch (error) {
+    logger.error("Error fetching profiles:", error);
+
     throw new Error("Error fetching profiles");
   }
 };

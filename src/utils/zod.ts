@@ -41,5 +41,5 @@ export const profileSearchSchema = z.object({
       }
       return num;
     })
-    .default("50"), // Default as string, will be transformed to number
+    .default("5"), // Default as string, will be transformed to number
 });

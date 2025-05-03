@@ -1,15 +1,29 @@
 import express from "express";
-import { Profile } from "../schemas/profile";
-import { formulateQuery, getProfiles } from "../services/profile-services";
+import { ProfileModel } from "../schemas/profile";
+import {
+  formulateQuery,
+  getProfiles,
+  ISkill,
+} from "../services/profile-services";
 import { z } from "zod";
 import { validateDate } from "../utils/validation";
 import { validateData } from "../middlewares/validationMiddleware";
 import { profileSearchSchema } from "../utils/zod";
+import logger from "../utils/logger";
 
 const router = express.Router();
 
 router.get("/search", validateData(profileSearchSchema), async (req, res) => {
   try {
+    const { success, data, error } = profileSearchSchema.safeParse(req.query);
+
+    if (!success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid query parameters",
+        error: error.errors,
+      });
+    }
     const {
       skills,
       skillsMinExp,
@@ -18,7 +32,7 @@ router.get("/search", validateData(profileSearchSchema), async (req, res) => {
       company,
       page,
       limit,
-    } = profileSearchSchema.parse(req.query);
+    } = data;
 
     if (availableBy && !validateDate(availableBy)) {
       return res.status(400).json({
@@ -27,26 +41,32 @@ router.get("/search", validateData(profileSearchSchema), async (req, res) => {
       });
     }
 
+    const skillsArray = skills ? skills.split(",") : undefined;
+    const skillsMinExpArray = skillsMinExp
+      ? skillsMinExp.split(",")
+      : undefined;
+
+    const requiredSkills: ISkill[] | undefined =
+      skillsArray?.map((skill, i) => ({
+        name: skill.trim(),
+        minExperience: skillsMinExpArray ? parseInt(skillsMinExpArray[i]) : 0,
+      })) || undefined;
+
+
     const query = formulateQuery({
-      skills,
-      skillsMinExp,
+      skills: requiredSkills,
       availableBy,
       location,
       company,
     });
 
-
-    query.forEach((q) => {
-      console.log(JSON.stringify(q.$addFields));
-      
-    })
-
-
-    const { data, hasNext, hasPrev, total } = await getProfiles(
-      query,
-      page,
-      limit
-    );
+    const {
+      data: profiles,
+      hasNext,
+      hasPrev,
+      total,
+      dataLength,
+    } = await getProfiles(query, page, limit);
 
     return res.status(200).json({
       success: true,
@@ -54,7 +74,8 @@ router.get("/search", validateData(profileSearchSchema), async (req, res) => {
       page: page || 1,
       hasNext,
       hasPrev,
-      data,
+      dataLength,
+      data: profiles,
     });
   } catch (error) {
     console.error("Error fetching profiles:", error);
@@ -70,7 +91,7 @@ router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const profile = await Profile.findById(id);
+    const profile = await ProfileModel.findById(id);
 
     if (!profile) {
       return res.status(404).json({

@@ -40,4 +40,4 @@ profileSchema.index({ location: "2dsphere" });
 profileSchema.index({ name: "text", "skills.name": "text" });
 profileSchema.index({ "skills.name": 1, "skills.experience": -1 });
 
-export const Profile = mongoose.model("Profile", profileSchema);
+export const ProfileModel = mongoose.model("Profile", profileSchema);
