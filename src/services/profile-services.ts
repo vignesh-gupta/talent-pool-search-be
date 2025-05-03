@@ -139,10 +139,46 @@ export const formulateQuery = ({
         },
       },
     },
+    {
+      $addFields:{
+        cals: {
+          skillsMatPt: {$multiply: ["$skillsMatch", 0.5]},
+          expPt: {$multiply: ["$totalExperience", 0.3 / 10]}, // 0.3 is the weight for experience, 10 is to convert year to 0-1 scale
+          recencyPt: {$multiply: ["$recencyScore", 0.2]}
+        }
+      }
+    },
+    {
+      $addFields: {
+        finalScore: {
+          $round: [
+            {
+              $divide: [
+                {
+                  $add: [
+                    {
+                      $multiply: ["$skillsMatch", 0.5],
+                    },
+                    {
+                      $multiply: ["$totalExperience", 0.3 / 10], // 0.3 is the weight for experience, 10 is to convert year to 0-1 scale
+                    },
+                    {
+                      $multiply: ["$recencyScore", 0.2],
+                    },
+                  ],
+                },
+                3,
+              ],
+            },
+            2,
+          ],
+        },
+      },
+    },
   ];
 
   pipeline.push({
-    $sort: { skillsMatch: -1 },
+    $sort: { finalScore: -1 },
   });
 
   return pipeline;

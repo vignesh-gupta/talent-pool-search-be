@@ -1,8 +1,8 @@
 import { z, ZodError } from "zod";
 
 export const profileSearchSchema = z.object({
-  skills: z.string().optional(),
-  skillsMinExp: z.string().optional(),
+  skills: z.string().optional().default(""),
+  skillsMinExp: z.string().optional().default(""),
   company: z.string().optional(),
   availableBy: z.string().date().optional(),
   location: z.string().optional(),

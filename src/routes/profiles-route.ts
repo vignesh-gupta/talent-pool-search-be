@@ -41,17 +41,14 @@ router.get("/search", validateData(profileSearchSchema), async (req, res) => {
       });
     }
 
-    const skillsArray = skills ? skills.split(",") : undefined;
-    const skillsMinExpArray = skillsMinExp
-      ? skillsMinExp.split(",")
-      : undefined;
+    const skillsArray = skills.split(",");
+    const skillsMinExpArray = skillsMinExp.split(",")
 
     const requiredSkills: ISkill[] | undefined =
       skillsArray?.map((skill, i) => ({
         name: skill.trim(),
         minExperience: skillsMinExpArray ? parseInt(skillsMinExpArray[i]) : 0,
       })) || undefined;
-
 
     const query = formulateQuery({
       skills: requiredSkills,
