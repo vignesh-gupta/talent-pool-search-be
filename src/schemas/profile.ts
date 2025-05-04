@@ -14,7 +14,7 @@ const experienceSchema = new Schema({
 
 export const profileSchema = new Schema({
   name: { type: String, required: true },
-  email: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
   location: {
     type: {
       type: String,

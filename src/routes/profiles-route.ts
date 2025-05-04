@@ -5,15 +5,60 @@ import {
   getProfiles,
   ISkill,
 } from "../services/profile-services";
-import { z } from "zod";
 import { validateDate } from "../utils/validation";
-import { validateData } from "../middlewares/validationMiddleware";
-import { profileSearchSchema } from "../utils/zod";
-import logger from "../utils/logger";
+import { profileDataSchema, profileSearchSchema } from "../utils/zod";
+import { getLocation } from "../utils/location";
 
 const router = express.Router();
 
-router.get("/search", validateData(profileSearchSchema), async (req, res) => {
+router.post("/", async (req, res) => {
+  try {
+
+    const { success, data, error } = profileDataSchema.safeParse(req.body);
+      
+      if (!success) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid profile data",
+          error: error.errors,
+        });
+      }
+  
+      const { name, email, location, skills, experience, availableBy } = data;
+  
+  
+      const newProfile = new ProfileModel({
+        name,
+        email,
+        location: {
+          type: "Point",
+          coordinates: [location.lng, location.lat],
+        },
+        skills,
+        experience,
+        availableBy,
+        last_active: new Date(),
+      });
+  
+      await newProfile.save();
+  
+      return res.status(201).json({
+        success: true,
+        message: "Profile created successfully",
+        data: newProfile,
+      });
+
+
+  } catch (error) {
+    console.error("Error creating profile:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+});
+
+router.get("/search", async (req, res) => {
   try {
     const { success, data, error } = profileSearchSchema.safeParse(req.query);
 
