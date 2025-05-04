@@ -6,49 +6,49 @@ import {
   ISkill,
 } from "../services/profile-services";
 import { validateDate } from "../utils/validation";
-import { profileDataSchema, profileSearchSchema } from "../utils/zod";
+import {
+  profileDataSchema,
+  profileIdSchema,
+  profileSearchSchema,
+} from "../utils/zod";
 import { getLocation } from "../utils/location";
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
   try {
-
     const { success, data, error } = profileDataSchema.safeParse(req.body);
-      
-      if (!success) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid profile data",
-          error: error.errors,
-        });
-      }
-  
-      const { name, email, location, skills, experience, availableBy } = data;
-  
-  
-      const newProfile = new ProfileModel({
-        name,
-        email,
-        location: {
-          type: "Point",
-          coordinates: [location.lon, location.lat],
-        },
-        skills,
-        experience,
-        availableBy,
-        last_active: new Date(),
-      });
-  
-      await newProfile.save();
-  
-      return res.status(201).json({
-        success: true,
-        message: "Profile created successfully",
-        data: newProfile,
-      });
 
+    if (!success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid profile data",
+        error: error.errors,
+      });
+    }
 
+    const { name, email, location, skills, experience, availableBy } = data;
+
+    const newProfile = new ProfileModel({
+      name,
+      email,
+      location: {
+        type: "Point",
+        coordinates: [location.lon, location.lat],
+      },
+      skills,
+      experience,
+      availableBy,
+      last_active: new Date(),
+    });
+
+    await newProfile.save();
+
+    return res.status(201).json({
+      success: true,
+      message: "Profile created successfully",
+      data: newProfile,
+    });
   } catch (error) {
     console.error("Error creating profile:", error);
     return res.status(500).json({
@@ -141,7 +141,16 @@ router.get("/search", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const { id } = req.params;
+    const { success, data } = profileIdSchema.safeParse(req.params);
+
+    if (!success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid profile ID",
+      });
+    }
+
+    const { id } = data;
 
     const profile = await ProfileModel.findById(id);
 

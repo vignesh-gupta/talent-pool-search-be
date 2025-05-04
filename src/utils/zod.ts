@@ -31,7 +31,7 @@ export type LocationSchema = z.infer<typeof locationSchema>;
 export const profileDataSchema = z.object({
   name: z.string().min(1, { message: "Name is required" }),
   email: z.string().email({ message: "Invalid email address" }),
-  location:locationSchema,
+  location: locationSchema,
   skills: z.array(
     z.object({
       name: z.string().min(1, { message: "Skill name is required" }),
@@ -46,7 +46,7 @@ export const profileDataSchema = z.object({
       description: z.string().optional(),
     })
   ),
-  availableBy: z.string().date()
+  availableBy: z.string().date(),
 });
 
 export type ProfileDataSchema = z.infer<typeof profileDataSchema>;
@@ -74,3 +74,7 @@ export const profileSearchSchema = z.object({
 });
 
 export type ProfileSearchSchema = z.infer<typeof profileSearchSchema>;
+
+export const profileIdSchema = z.object({
+  id: z.string().length(24, { message: "Invalid profile ID" }),
+});
