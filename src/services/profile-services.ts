@@ -1,6 +1,7 @@
 import { PipelineStage } from "mongoose";
 import { ProfileModel } from "../schemas/profile";
 import logger from "../utils/logger";
+import { LocationSchema } from "../utils/zod";
 
 export type ProfileQuery = {
   skills?: any;
@@ -24,24 +25,26 @@ export const formulateQuery = ({
   skills?: ISkill[];
   company?: string;
   availableBy?: string;
-  location?: string;
+  location?: LocationSchema;
 }) => {
   const pipeline: PipelineStage[] = [];
 
   // Match stage to filter profiles based on Location, company, availability
-  // if(location) {
-  //   pipeline.push({
-  //     $geoNear: {
-  //       near: {
-  //         type: "Point",
-  //         coordinates: location,
-  //       },
-  //       distanceField: "distance",
-  //       spherical: true,
-  //       maxDistance: 200000, // 10 km
-  //     },
-  //   });
-  // }
+  if (location) {
+    const { lat, lon } = location;
+
+    pipeline.push({
+      $geoNear: {
+        near: {
+          type: "Point",
+          coordinates: [lon, lat], // Note: MongoDB uses [longitude, latitude]
+        },
+        distanceField: "distance",
+        spherical: true,
+        maxDistance: 10000, // 10 km
+      },
+    });
+  }
 
   if (company) {
     pipeline.push({
@@ -58,8 +61,6 @@ export const formulateQuery = ({
       },
     });
   }
-
-  //
 
   /*
     Add a field to check the match percentage for skills and min experience

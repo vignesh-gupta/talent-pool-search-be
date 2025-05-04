@@ -32,7 +32,7 @@ router.post("/", async (req, res) => {
         email,
         location: {
           type: "Point",
-          coordinates: [location.lng, location.lat],
+          coordinates: [location.lon, location.lat],
         },
         skills,
         experience,
@@ -87,7 +87,15 @@ router.get("/search", async (req, res) => {
     }
 
     const skillsArray = skills.split(",");
-    const skillsMinExpArray = skillsMinExp.split(",")
+    const skillsMinExpArray = skillsMinExp.split(",");
+
+    if (skillsMinExpArray.length > skillsArray.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid query parameters",
+        error: "skillsMinExp should not be more than skills",
+      });
+    }
 
     const requiredSkills: ISkill[] | undefined =
       skillsArray?.map((skill, i) => ({
@@ -95,10 +103,12 @@ router.get("/search", async (req, res) => {
         minExperience: skillsMinExpArray ? parseInt(skillsMinExpArray[i]) : 0,
       })) || undefined;
 
+    const locationDetails = location ? await getLocation(location) : undefined;
+
     const query = formulateQuery({
       skills: requiredSkills,
       availableBy,
-      location,
+      location: locationDetails,
       company,
     });
 

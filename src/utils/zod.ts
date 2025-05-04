@@ -16,12 +16,12 @@ const stringToNumber = (val: string, isFloat?: boolean) => {
   return num;
 };
 
-// Lat and Lng can be string or number but if it's string, convert it to number
+// Lat and lon can be string or number but if it's string, convert it to number
 export const locationSchema = z.object({
-  lat: z.union([z.string(), z.number()]).transform((val) => {
+  lat: z.string().transform((val) => {
     return typeof val === "string" ? stringToNumber(val, true) : val;
   }),
-  lng: z.union([z.string(), z.number()]).transform((val) => {
+  lon: z.string().transform((val) => {
     return typeof val === "string" ? stringToNumber(val, true) : val;
   }),
 });
