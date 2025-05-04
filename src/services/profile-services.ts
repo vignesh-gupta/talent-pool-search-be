@@ -27,20 +27,53 @@ export const formulateQuery = ({
   location?: string;
 }) => {
   const pipeline: PipelineStage[] = [];
-  // Add a field to check the match percentage for skills and min experience
-  // Check skill_match (if skills are there + min experience) = 1 pt , if skills are there but no min experience = 0.5 pt or 0 pt
+
+  // Match stage to filter profiles based on Location, company, availability
+  // if(location) {
+  //   pipeline.push({
+  //     $geoNear: {
+  //       near: {
+  //         type: "Point",
+  //         coordinates: location,
+  //       },
+  //       distanceField: "distance",
+  //       spherical: true,
+  //       maxDistance: 200000, // 10 km
+  //     },
+  //   });
+  // }
+
+  if (company) {
+    pipeline.push({
+      $match: {
+        "experience.company": { $regex: company, $options: "i" },
+      },
+    });
+  }
+
+  if (availableBy) {
+    pipeline.push({
+      $match: {
+        availableBy: { $gte: new Date(availableBy) },
+      },
+    });
+  }
+
+  //
 
   /*
+    Add a field to check the match percentage for skills and min experience
+    Check skill_match (if skills are there + min experience) = 1 pt , if skills are there but no min experience = 0.5 pt or 0 pt
     eg: 
-    case 1:
-    input: [{ name: "Java", minExperience: 2 }, { name: "Python", minExperience: 3 }]
-    Database: [{ name: "Java", experience: 2 }, { name: "Python", experience: 1 }]
-    output: skillsMatch = (1+0.5)  = 1.5/ 2 = 0.75
+      case 1:
+      input: [{ name: "Java", minExperience: 2 }, { name: "Python", minExperience: 3 }]
+      Database: [{ name: "Java", experience: 2 }, { name: "Python", experience: 1 }]
+      output: skillsMatch = (1+0.5)  = 1.5/ 2 = 0.75
 
-    case 2:
-    input: [{ name: "Java", minExperience: 2 }, { name: "Python", minExperience: 3 }]
-    Database: [{ name: "Java", experience: 2 }, { name: "Python", experience: 3 }]
-    output: skillsMatch = (1+1)  = 2/ 2 = 1
+      case 2:
+      input: [{ name: "Java", minExperience: 2 }, { name: "Python", minExperience: 3 }]
+      Database: [{ name: "Java", experience: 2 }, { name: "Python", experience: 3 }]
+      output: skillsMatch = (1+1)  = 2/ 2 = 1
     */
   pipeline.push({
     $addFields: {
@@ -60,7 +93,13 @@ export const formulateQuery = ({
                             input: "$skills",
                             as: "userSkill",
                             cond: {
-                              $eq: ["$$userSkill.name", "$$desiredSkill.name"],
+                              // Fuzzy match on skill name
+                              $regexMatch: {
+                                input: "$$userSkill.name",
+                                regex: {
+                                  $concat: ["(?i)", "$$desiredSkill.name"], // case insensitive match
+                                },
+                              },
                             },
                           },
                         },

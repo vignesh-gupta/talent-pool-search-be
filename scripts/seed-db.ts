@@ -154,10 +154,7 @@ function generateProfile() {
     location: generateLocation(),
     skills: generateSkills(),
     experience: generateExperience(),
-    availability: {
-      from,
-      to,
-    },
+    availableBy: faker.date.between({ from, to }),
     last_active: faker.date.recent({ days: 10 }),
     created_at: faker.date.past({ years: 2 }),
   };

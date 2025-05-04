@@ -28,10 +28,7 @@ export const profileSchema = new Schema({
   },
   skills: [skillSchema],
   experience: [experienceSchema],
-  availability: {
-    from: { type: Date, required: true },
-    to: { type: Date, required: true },
-  },
+  availableBy: { type: Date, required: true },
   last_active: { type: Date, required: true },
   created_at: { type: Date, default: Date.now },
 });

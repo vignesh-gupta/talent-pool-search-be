@@ -1,5 +1,21 @@
 import { z, ZodError } from "zod";
 
+const stringToNumber = (val: string, isFloat?: boolean) => {
+  const num = isFloat ? parseFloat(val) : parseInt(val);
+  if (isNaN(num)) {
+    throw new ZodError([
+      {
+        message: `Invalid ${isFloat ? "number" : "integer"}`,
+        code: "invalid_type",
+        expected: isFloat ? "number" : "integer",
+        received: typeof val,
+        path: [],
+      },
+    ]);
+  }
+  return num;
+};
+
 export const profileSearchSchema = z.object({
   skills: z.string().optional().default(""),
   skillsMinExp: z.string().optional().default(""),
@@ -8,38 +24,16 @@ export const profileSearchSchema = z.object({
   location: z.string().optional(),
   page: z
     .string()
-    .transform((val) => {
-      const num = parseInt(val);
-      if (isNaN(num) || num <= 0) {
-        throw new ZodError([
-          {
-            message: "Invalid page number",
-            code: "invalid_type",
-            path: ["page"],
-            expected: "number",
-            received: "nan",
-          }
-        ]);
-      }
-      return num;
+    .transform((val) => stringToNumber(val))
+    .refine((val) => val > 0, {
+      message: "Page number must be greater than 0",
     })
     .default("1"), // Default as string, will be transformed to number
   limit: z
     .string()
-    .transform((val) => {
-      const num = parseInt(val);
-      if (isNaN(num) || num <= 0) {
-        throw new ZodError([
-          {
-            message: "Invalid per page limit",
-            code: "invalid_type",
-            path: ["limit"],
-            expected: "number",
-            received: "nan",
-          }
-        ]);
-      }
-      return num;
+    .transform((val) => stringToNumber(val))
+    .refine((val) => val > 0, {
+      message: "Per page limit must be greater than 0",
     })
-    .default("5"), // Default as string, will be transformed to number
+    .default("50"), // Default as string, will be transformed to number
 });
