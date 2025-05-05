@@ -10,7 +10,7 @@ import {
   profileDataSchema,
   profileIdSchema,
   profileSearchSchema,
-} from "../utils/zod";
+} from "../utils/zod/profiles";
 import { getLocation } from "../utils/location";
 
 const router = express.Router();

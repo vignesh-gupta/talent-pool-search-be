@@ -1,7 +1,7 @@
 import { PipelineStage } from "mongoose";
 import { ProfileModel } from "../schemas/profile";
 import logger from "../utils/logger";
-import { LocationSchema } from "../utils/zod";
+import { LocationSchema } from "../utils/zod/profiles";
 
 export type ProfileQuery = {
   skills?: any;

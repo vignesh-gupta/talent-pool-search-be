@@ -7,11 +7,9 @@ import logger from "./utils/logger";
 connectDB()
   .then(() => {
     // Start server
-    const server = app.listen(config.port, () => {
-      logger.info(
-        `Server running in ${config.env} mode on port ${config.port}`
-      );
-    });
+    const server = app.listen(config.port, () =>
+      logger.info(`Server running in ${config.env} mode on port ${config.port}`)
+    );
 
     // Handle unhandled promise rejections
     process.on("unhandledRejection", (err: Error) => {

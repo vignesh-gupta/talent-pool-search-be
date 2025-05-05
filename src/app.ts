@@ -13,7 +13,6 @@ import { errorHandler, notFound } from "./middlewares/errorMiddleware";
 import logger from "./utils/logger";
 
 const app = express();
-const port = 3000;
 
 dotenvConfig({ path: __dirname + "/.env" });
 

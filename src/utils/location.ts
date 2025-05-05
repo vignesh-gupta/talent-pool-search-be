@@ -1,4 +1,4 @@
-import { locationSchema, LocationSchema } from "./zod";
+import { locationSchema, LocationSchema } from "./zod/profiles";
 
 export const getLocation = async (
   location: string
