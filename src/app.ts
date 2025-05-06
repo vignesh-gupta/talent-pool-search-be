@@ -5,7 +5,7 @@ import compression from "compression";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import profileRoute from "./routes/profiles-route";
-
+import searchesRoute from "./routes/searches-route";
 
 import { config as dotenvConfig } from "dotenv";
 import { config } from "./configs/config";
@@ -65,6 +65,7 @@ app.get("/health", (req, res) => {
 
 // API Routes
 app.use("/api/v1/profiles", profileRoute);
+app.use("/api/v1/searches", searchesRoute);
 
 // 404 handler
 app.use(notFound);
