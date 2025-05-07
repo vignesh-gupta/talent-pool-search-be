@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { paginationSchema } from ".";
 
 export const searchDataSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -14,3 +15,10 @@ export const searchDataSchema = z.object({
   company: z.string().optional(),
   availableBy: z.date().optional(),
 });
+
+const searchFiltersSchema = z.object({
+  q: z.string().optional(),
+});
+
+
+export const searchGetSchema = searchFiltersSchema.merge(paginationSchema)
