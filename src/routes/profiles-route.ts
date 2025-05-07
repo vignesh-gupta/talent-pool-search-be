@@ -1,17 +1,19 @@
 import express from "express";
+
 import { ProfileModel } from "../schemas/profile";
 import {
   formulateQuery,
   getProfiles,
   ISkill,
 } from "../services/profile-services";
+
 import { validateDate } from "../utils/validation";
 import {
   profileDataSchema,
-  profileIdSchema,
   profileSearchSchema,
 } from "../utils/zod/profiles";
 import { getLocation } from "../utils/location";
+import { IdSchema } from "../utils/zod";
 
 const router = express.Router();
 
@@ -141,7 +143,7 @@ router.get("/search", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const { success, data } = profileIdSchema.safeParse(req.params);
+    const { success, data } = IdSchema.safeParse(req.params);
 
     if (!success) {
       return res.status(400).json({

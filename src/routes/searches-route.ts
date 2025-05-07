@@ -1,8 +1,41 @@
 import { Router } from "express";
-import { searchDataSchema } from "../utils/zod/searches";
+
 import { SearchesModel } from "../schemas/search";
 
+import { searchDataSchema } from "../utils/zod/searches";
+import { IdSchema } from "../utils/zod";
+
 const router = Router();
+
+router.get("/:id", async (req, res) => {
+  try {
+    const { success, data } = IdSchema.safeParse(req.params);
+
+    if (!success) {
+      return res.status(400).json({
+        success: false,
+        message: "ID is required",
+      });
+    }
+
+    const searchData = await SearchesModel.findById(data.id);
+
+    if (!searchData) {
+      return res.status(404).json({
+        success: false,
+        message: "Search data not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Search data retrieved successfully",
+      data: searchData,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
 router.post("/", async (req, res) => {
   try {

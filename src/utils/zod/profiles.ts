@@ -1,20 +1,5 @@
-import { z, ZodError } from "zod";
-
-const stringToNumber = (val: string, isFloat?: boolean) => {
-  const num = isFloat ? parseFloat(val) : parseInt(val);
-  if (isNaN(num)) {
-    throw new ZodError([
-      {
-        message: `Invalid ${isFloat ? "number" : "integer"}`,
-        code: "invalid_type",
-        expected: isFloat ? "number" : "integer",
-        received: typeof val,
-        path: [],
-      },
-    ]);
-  }
-  return num;
-};
+import { z } from "zod";
+import { paginationSchema, stringToNumber } from ".";
 
 // Lat and lon can be string or number but if it's string, convert it to number
 export const locationSchema = z.object({
@@ -51,30 +36,14 @@ export const profileDataSchema = z.object({
 
 export type ProfileDataSchema = z.infer<typeof profileDataSchema>;
 
-export const profileSearchSchema = z.object({
+export const profileFiltersSchema = z.object({
   skills: z.string().optional().default(""),
   skillsMinExp: z.string().optional().default(""),
   company: z.string().optional(),
   availableBy: z.string().date().optional(),
   location: z.string().optional(),
-  page: z
-    .string()
-    .transform((val) => stringToNumber(val))
-    .refine((val) => val > 0, {
-      message: "Page number must be greater than 0",
-    })
-    .default("1"), // Default as string, will be transformed to number
-  limit: z
-    .string()
-    .transform((val) => stringToNumber(val))
-    .refine((val) => val > 0, {
-      message: "Per page limit must be greater than 0",
-    })
-    .default("50"), // Default as string, will be transformed to number
 });
+
+export const profileSearchSchema = profileFiltersSchema.merge(paginationSchema);
 
 export type ProfileSearchSchema = z.infer<typeof profileSearchSchema>;
-
-export const profileIdSchema = z.object({
-  id: z.string().length(24, { message: "Invalid profile ID" }),
-});
