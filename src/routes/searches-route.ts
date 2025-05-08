@@ -5,6 +5,8 @@ import { SearchesModel } from "../schemas/search";
 import { searchDataSchema, searchGetSchema } from "../utils/zod/searches";
 import { IdSchema } from "../utils/zod";
 import logger from "../utils/logger";
+import { generateSearchTitle } from "../utils/gen-search-title";
+import { generateSearchURL } from "../utils/gen-search-url";
 
 const router = Router();
 
@@ -83,27 +85,12 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const { title, skills, availableBy, company, location } = data;
-
-    let searchUrl = `${process.env.BASE_URL}/api/v1/profiles/search?`;
-
-    if (skills && skills.length > 0) {
-      const skillsArray = skills.map((skill) => skill.name).join(",");
-      const skillsMinExp = skills.map((skill) => skill.experience).join(",");
-      searchUrl += `skills=${skillsArray}&skillsMinExp=${skillsMinExp}`;
-    }
-
-    if (company) searchUrl += `&company=${company}`;
-
-    if (location) searchUrl += `&location=${location}`;
-
-    if (availableBy) searchUrl += `&availableBy=${availableBy}`;
+    const searchTitle = generateSearchTitle(data);
+    const searchUrl = generateSearchURL(data);
 
     const searchData = new SearchesModel({
-      title,
-      location,
-      skills,
-      availableBy,
+      ...data,
+      title: searchTitle,
       url: searchUrl,
     });
 

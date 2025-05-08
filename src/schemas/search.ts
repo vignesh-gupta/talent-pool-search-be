@@ -12,13 +12,7 @@ const searchesSchema = new Schema({
       experience: { type: Number },
     },
   ],
-  experience: [
-    {
-      company: { type: String },
-      role: { type: String },
-      years: { type: Number },
-    },
-  ],
+  company: { type: String },
   availableBy: { type: Date },
   url: { type: String, required: true },
   created_at: { type: Date, default: Date.now },

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { paginationSchema } from ".";
 
 export const searchDataSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().optional(),
   location: z.string().optional(),
   skills: z
     .array(
@@ -15,6 +15,8 @@ export const searchDataSchema = z.object({
   company: z.string().optional(),
   availableBy: z.date().optional(),
 });
+
+export type SearchDataType = z.infer<typeof searchDataSchema>;
 
 const searchFiltersSchema = z.object({
   q: z.string().optional(),
